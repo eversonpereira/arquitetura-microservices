@@ -1,0 +1,54 @@
+version: '3.7'
+
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    tty:
+      true
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "5672" ]
+      interval: 5s
+      timeout: 15s
+      retries: 3
+
+  weatherbackend:
+    build: ./weatherbackend
+    depends_on:
+      - rabbitmq
+    ports:
+      - "8090:8090"
+    environment:
+      - "SPRING_RABBITMQ_HOST=rabbitmq"
+      - "LOGSTASH_HOST=host.docker.internal"
+    tty:
+      true
+    restart:
+      unless-stopped
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "8090" ]
+      interval: 5s
+      timeout: 15s
+      retries: 3
+
+  weatherservice:
+    build: ./weatherservice
+    depends_on:
+      - rabbitmq
+    ports:
+      - "8095:8095"
+    environment:
+      - "SPRING_RABBITMQ_HOST=rabbitmq"
+      - "LOGSTASH_HOST=host.docker.internal"
+    tty:
+      true
+    restart:
+      unless-stopped
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "8095" ]
+      interval: 5s
+      timeout: 15s
+      retries: 3
